@@ -60,7 +60,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
     adjustBurnedPixels = {
 
       if (!is.null(sim$rstCurrentBurn)){
-        if (all.equal(target = sim$landscape$age, current = sim$rstCurrentBurn)) {
+        if (compareRaster(target = sim$landscape$age, current = sim$rstCurrentBurn)) {
         #adjust age of burned pixels - this module assumes annual burns
         sim$landscape$age[sim$rstCurrentBurn == 1] <- 0
         } else {
@@ -78,6 +78,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
       sim$rstCurrentHarvest <- sim$landscape$age
       #harvest raster is binary
       sim$rstCurrentHarvest[sim$rstCurrentHarvest != 1] <- 0
+      sim$rstCurrentHarvest@data$attributes$Year <- time(sim)
 
     }
 
