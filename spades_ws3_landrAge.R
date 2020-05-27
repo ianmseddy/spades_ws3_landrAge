@@ -23,7 +23,12 @@ defineModule(sim, list(
     defineParameter(".useCache", "logical", FALSE, NA, NA,
                     paste("Should this entire module be run with caching activated?",
                           "This is generally intended for data-type modules, where stochasticity",
-                          "and time are not relevant"))
+                          "and time are not relevant")),
+    defineParameter('basenames', 'character', NA, NA, NA,
+                    'vector of MU basenames to load, beginning with tsa, e.g. "tsa40"'),
+    defineParameter('base.year', 'numeric', 2015, NA, NA, "base year of forest inventory data"),
+    defineParameter("tifPath", "character", 'tif', NA, NA,
+                    "the name of the directory where harvest tifs are stored (currently in inputs)")
   ),
   inputObjects = bind_rows(
     #expectsInput("objectName", "objectClass", "input object description", sourceURL, ...),
@@ -75,12 +80,16 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
 
     outputHarvestRst = {
 
-      sim$rstCurrentHarvest <- sim$landscape$age
+      sim$rstCurrentHarvest <- buildHarvest(time = time(sim),
+                                            base.year = P(sim)$base.year,
+                                            basenames = P(sim)$basenames,
+                                            tifPath = P(sim)$tifPath,
+                                            inputPath = inputPath(sim))
       #harvest raster is binary
       sim$rstCurrentHarvest[sim$rstCurrentHarvest != 1] <- 0
       sim$rstCurrentHarvest@data$attributes$Year <- time(sim)
 
-    }
+    },
 
     warning(paste("Undefined event type: \'", current(sim)[1, "eventType", with = FALSE],
                   "\' in module \'", current(sim)[1, "moduleName", with = FALSE], "\'", sep = ""))
@@ -121,14 +130,23 @@ plotFun <- function(sim) {
 }
 
 ### template for your event1
-Event1 <- function(sim) {
-  # ! ----- EDIT BELOW ----- ! #
-  # THE NEXT TWO LINES ARE FOR DUMMY UNIT TESTS; CHANGE OR DELETE THEM.
-  # sim$event1Test1 <- " this is test for event 1. " # for dummy unit test
-  # sim$event1Test2 <- 999 # for dummy unit test
+buildHarvest <- function(base.year, basenames, time, tifPath, inputPath) {
 
-  # ! ----- STOP EDITING ----- ! #
-  return(invisible(sim))
+  browser()
+  harvestYear <- base.year + time - start(sim)
+  filePaths <- file.path(inputPath, tifPath, basenames, paste0("projected_harvest_", harvestYear, ".tif"))
+  #e.g. 2015 + 2018 - 2011, if start(sim) != base.year
+  outputRaster <- lapply(filePaths, raster)
+
+  if (length(outputRaster) > 1){
+    names(outputRaster)[1:2] <- c("x", "y") #needed for mosaic
+    outputRaster$FUN <- 'mean'
+    outputRaster$na.rm <- TRUE
+    outputRaster <- do.call(mosaic, outputRaster)
+    outputRaster[is.nan(outputRaster)] <- NA # replace NaN values with NA
+  }
+
+  return(outputRaster)
 }
 
 ### template for your event2
