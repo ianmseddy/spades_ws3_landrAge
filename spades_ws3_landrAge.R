@@ -59,7 +59,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
 
       # schedule future event(s)
       sim <- scheduleEvent(sim, time(sim), "spades_ws3_landrAge", 'adjustBurnedPixels', eventPriority = 9)
-      sim <- scheduleEvent(sim, time(sim), "spades_ws3_landrAge", "outputHarvestRst", eventPriority = 8)
+      sim <- scheduleEvent(sim, time(sim), "spades_ws3_landrAge", "outputHarvestRst", eventPriority = 5.5)
     },
 
     adjustBurnedPixels = {
@@ -142,6 +142,8 @@ buildHarvest <- function(harvestYear, basenames, tifPath, inputPath) {
     outputRaster$na.rm <- TRUE
     outputRaster <- do.call(mosaic, outputRaster)
     outputRaster[is.nan(outputRaster)] <- NA # replace NaN values with NA
+  } else {
+    outputRaster <- outputRaster[[1]]
   }
 
   return(outputRaster)
