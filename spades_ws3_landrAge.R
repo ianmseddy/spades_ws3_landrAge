@@ -9,7 +9,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = deparse(list("README.txt", "spades_ws3_landrAge.Rmd")),
-  reqdPkgs = list(),
+  reqdPkgs = list('raster'),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
