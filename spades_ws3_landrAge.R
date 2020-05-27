@@ -58,8 +58,8 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
       sim <- Init(sim)
 
       # schedule future event(s)
-      sim <- scheduleEvents(sim, time(sim), "spades_ws3_landrAge", 'adjustBurnedPixels', eventPriority = 9)
-      sim <- scheduleEvents(sim, time(sim), "spades_ws3_landrAge", "outputHarvestRst", eventPriority = 8)
+      sim <- scheduleEvent(sim, time(sim), "spades_ws3_landrAge", 'adjustBurnedPixels', eventPriority = 9)
+      sim <- scheduleEvent(sim, time(sim), "spades_ws3_landrAge", "outputHarvestRst", eventPriority = 8)
     },
 
     adjustBurnedPixels = {
