@@ -79,9 +79,9 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
     },
 
     outputHarvestRst = {
-
-      sim$rstCurrentHarvest <- buildHarvest(time = time(sim),
-                                            base.year = P(sim)$base.year,
+      harvestYear <- P(sim)$base.year + time(sim) - start(sim)
+      #e.g. 2015 + 2018 - 2011, if start(sim) != base.year
+      sim$rstCurrentHarvest <- buildHarvest(harvestYear,
                                             basenames = P(sim)$basenames,
                                             tifPath = P(sim)$tifPath,
                                             inputPath = inputPath(sim))
@@ -130,12 +130,10 @@ plotFun <- function(sim) {
 }
 
 ### template for your event1
-buildHarvest <- function(base.year, basenames, time, tifPath, inputPath) {
+buildHarvest <- function(harvestYear, basenames, tifPath, inputPath) {
 
   browser()
-  harvestYear <- base.year + time - start(sim)
   filePaths <- file.path(inputPath, tifPath, basenames, paste0("projected_harvest_", harvestYear, ".tif"))
-  #e.g. 2015 + 2018 - 2011, if start(sim) != base.year
   outputRaster <- lapply(filePaths, raster)
 
   if (length(outputRaster) > 1){
