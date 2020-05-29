@@ -87,7 +87,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
                                             inputPath = inputPath(sim))
       #harvest raster is binary
       sim$rstCurrentHarvest[sim$rstCurrentHarvest != 1] <- 0
-      sim$rstCurrentHarvest@data$attributes$Year <- time(sim)
+      sim$rstCurrentHarvest@data@attributes$Year <- time(sim)
 
     },
 
@@ -132,7 +132,6 @@ plotFun <- function(sim) {
 ### template for your event1
 buildHarvest <- function(harvestYear, basenames, tifPath, inputPath) {
 
-  browser()
   filePaths <- file.path(inputPath, tifPath, basenames, paste0("projected_harvest_", harvestYear, ".tif"))
   outputRaster <- lapply(filePaths, raster)
 
