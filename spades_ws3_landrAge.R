@@ -35,12 +35,16 @@ defineModule(sim, list(
     expectsInput(objectName = 'landscape', objectClass = 'RasterStack',
                  desc = 'a raster stack consisting of FMU, THLB, AU, Block ID, and stand age', sourceURL = NA),
     expectsInput(objectName = 'rstCurrentBurn', objectClass = 'RasterLayer',
-                 desc = 'a binary raster representing annual burn')
+                 desc = 'a binary raster representing annual burn'),
+    expectsInput(objectName = 'pixelGroupMap', objectClass = 'RasterLayer',
+                 desc = 'map of pixelGroups in LandR simulations')
   ),
   outputObjects = bind_rows(
     #createsOutput("objectName", "objectClass", "output object description", ...),
     createsOutput(objectName = 'rstCurrentHarvest', objectClass = 'RasterLayer',
-                  desc = 'a raster representing annual harvest areas')
+                  desc = 'a raster representing annual harvest areas'),
+    createsOutput(objectName = 'harvestStats', objectClass = 'data.frame',
+                  desc = 'data.frame witih simple harvest reporting over landscape')
   )
 ))
 
@@ -81,14 +85,25 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
     outputHarvestRst = {
       harvestYear <- P(sim)$base.year + time(sim) - start(sim)
       #e.g. 2015 + 2018 - 2011, if start(sim) != base.year
-      sim$rstCurrentHarvest <- buildHarvest(harvestYear,
+      rstCurrentHarvest <- buildHarvest(harvestYear,
                                             basenames = P(sim)$basenames,
                                             tifPath = P(sim)$tifPath,
                                             inputPath = inputPath(sim))
-      #harvest raster is binary
-      sim$rstCurrentHarvest[sim$rstCurrentHarvest != 1] <- 0
-      sim$rstCurrentHarvest@data@attributes$Year <- time(sim)
 
+      ws3count <- sum(getValues(rstCurrentHarvest) == 1, na.rm = TRUE)
+
+      rstCurrentHarvest[is.na(rstCurrentHarvest)] <- 0
+      rstCurrentHarvest[is.na(sim$pixelGroupMap)] <- NA
+      sim$rstCurrentHarvest <- rstCurrentHarvest
+      landrCount <- sum(getValues(sim$rstCurrentHarvest) == 1, na.rm = TRUE)
+
+      sim$rstCurrentHarvest@data@attributes$Year <- time(sim)
+      currentHarvestStats <- data.frame('ws3_harvestArea_pixels' = ws3count,
+                                        'LandR_harvestArea_pixels' = landrCount,
+                                        'year' = time(sim))
+      sim$landscapeStats <- rbind(sim$landscapeStats, currentHarvestStats)
+
+      sim <- scheduleEvent(sim, time(sim) + 1, 'spades_ws3_landrAge', 'outputHarvestRst', eventPriority = 5.5)
     },
 
     warning(paste("Undefined event type: \'", current(sim)[1, "eventType", with = FALSE],
@@ -104,7 +119,8 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
 Init <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
 
-  # ! ----- STOP EDITING ----- ! #
+  sim$harvestStats <- data.frame('ws3_harvestArea_pixels' = numeric(0), 'LandR_harvestArea_pixels' = numeric(0),
+                                 'year' = numeric(0))
 
   return(invisible(sim))
 }
@@ -123,7 +139,7 @@ Save <- function(sim) {
 plotFun <- function(sim) {
   # ! ----- EDIT BELOW ----- ! #
   # do stuff for this event
-  #Plot(sim$object)
+  Plot(sim$rstCurrentHarvest)
 
   # ! ----- STOP EDITING ----- ! #
   return(invisible(sim))
