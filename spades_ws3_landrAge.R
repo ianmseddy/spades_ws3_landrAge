@@ -9,7 +9,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = deparse(list("README.txt", "spades_ws3_landrAge.Rmd")),
-  reqdPkgs = list('raster'),
+  reqdPkgs = list('raster', 'magrittr'),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
@@ -37,14 +37,18 @@ defineModule(sim, list(
     expectsInput(objectName = 'rstCurrentBurn', objectClass = 'RasterLayer',
                  desc = 'a binary raster representing annual burn'),
     expectsInput(objectName = 'pixelGroupMap', objectClass = 'RasterLayer',
-                 desc = 'map of pixelGroups in LandR simulations')
+                 desc = 'map of pixelGroups in LandR simulations'),
+    expectsInput(objectName = 'cohortData', objectClass = 'data.table',
+                 desc = "Columns: B, pixelGroup, speciesCode, Indicating several features about ages and current vegetation of stand")
   ),
   outputObjects = bind_rows(
     #createsOutput("objectName", "objectClass", "output object description", ...),
     createsOutput(objectName = 'rstCurrentHarvest', objectClass = 'RasterLayer',
                   desc = 'a raster representing annual harvest areas'),
     createsOutput(objectName = 'harvestStats', objectClass = 'data.frame',
-                  desc = 'data.frame witih simple harvest reporting over landscape')
+                  desc = 'data.frame witih simple harvest reporting over landscape'),
+    createsOutput(objectName = 'harvestedCohorts', objectClass = data.table,
+                  desc = 'contains species, age, and biomass of harvested cohorts')
   )
 ))
 
@@ -83,6 +87,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
     },
 
     outputHarvestRst = {
+      browser()
       harvestYear <- P(sim)$base.year + time(sim) - start(sim)
       #e.g. 2015 + 2018 - 2011, if start(sim) != base.year
       rstCurrentHarvest <- buildHarvest(harvestYear,
@@ -102,6 +107,9 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
                                         'LandR_harvestArea_pixels' = landrCount,
                                         'year' = time(sim))
       sim$landscapeStats <- rbind(sim$landscapeStats, currentHarvestStats)
+      sim$harvestedCohorts <- makeHarvestedCohorts(pixeGroupMap = sim$pixelGroupMap,
+                                                   rstCurrentHarvest = sim$rstCurrentHarvest,
+                                                   cohortData = sim$cohortData)
 
       sim <- scheduleEvent(sim, time(sim) + 1, 'spades_ws3_landrAge', 'outputHarvestRst', eventPriority = 5.5)
     },
@@ -165,14 +173,18 @@ buildHarvest <- function(harvestYear, basenames, tifPath, inputPath) {
 }
 
 ### template for your event2
-Event2 <- function(sim) {
-  # ! ----- EDIT BELOW ----- ! #
-  # THE NEXT TWO LINES ARE FOR DUMMY UNIT TESTS; CHANGE OR DELETE THEM.
-  # sim$event2Test1 <- " this is test for event 2. " # for dummy unit test
-  # sim$event2Test2 <- 777  # for dummy unit test
-
-  # ! ----- STOP EDITING ----- ! #
-  return(invisible(sim))
+makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData) {
+  #this object is necessary in the event harvest occurs on a pixelGroup 0.
+  #this is possible if the pixelGroup is at longevity or gets burned.
+  #For this reason, we retain the cohort info here.
+  cdLong <- data.table(pixelGroup = getValues(pixelGroupMap),
+                       pixelIndex = 1:ncell(pixelGroupMap)
+                       harvest = getValues(rstCurrentHarvest)) %>%
+    na.omit(.) %>%
+    .[harvest == 1]
+  #must be cartesian because multiple cohorts, multiple pixels per PG
+  harvestedPixels <- cohortData[cdLong, on = c('pixelGroup'), allow.cartesian = TRUE]
+  return(harvestedPixels)
 }
 
 .inputObjects <- function(sim) {
