@@ -47,7 +47,7 @@ defineModule(sim, list(
                   desc = 'a raster representing annual harvest areas'),
     createsOutput(objectName = 'harvestStats', objectClass = 'data.frame',
                   desc = 'data.frame witih simple harvest reporting over landscape'),
-    createsOutput(objectName = 'harvestedCohorts', objectClass = data.table,
+    createsOutput(objectName = 'harvestedCohorts', objectClass = 'data.table',
                   desc = 'contains species, age, and biomass of harvested cohorts')
   )
 ))
@@ -87,7 +87,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
     },
 
     outputHarvestRst = {
-      browser()
+
       harvestYear <- P(sim)$base.year + time(sim) - start(sim)
       #e.g. 2015 + 2018 - 2011, if start(sim) != base.year
       rstCurrentHarvest <- buildHarvest(harvestYear,
@@ -107,7 +107,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
                                         'LandR_harvestArea_pixels' = landrCount,
                                         'year' = time(sim))
       sim$landscapeStats <- rbind(sim$landscapeStats, currentHarvestStats)
-      sim$harvestedCohorts <- makeHarvestedCohorts(pixeGroupMap = sim$pixelGroupMap,
+      sim$harvestedCohorts <- makeHarvestedCohorts(pixelGroupMap = sim$pixelGroupMap,
                                                    rstCurrentHarvest = sim$rstCurrentHarvest,
                                                    cohortData = sim$cohortData)
 
@@ -178,10 +178,10 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData) {
   #this is possible if the pixelGroup is at longevity or gets burned.
   #For this reason, we retain the cohort info here.
   cdLong <- data.table(pixelGroup = getValues(pixelGroupMap),
-                       pixelIndex = 1:ncell(pixelGroupMap)
+                       pixelIndex = 1:ncell(pixelGroupMap),
                        harvest = getValues(rstCurrentHarvest)) %>%
     na.omit(.) %>%
-    .[harvest == 1]
+    .[harvest == 1,]
   #must be cartesian because multiple cohorts, multiple pixels per PG
   harvestedPixels <- cohortData[cdLong, on = c('pixelGroup'), allow.cartesian = TRUE]
   return(harvestedPixels)
