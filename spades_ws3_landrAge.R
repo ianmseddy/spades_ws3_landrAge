@@ -73,7 +73,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
     adjustBurnedPixels = {
 
       if (!is.null(sim$rstCurrentBurn)){
-        if (compareRaster(target = sim$landscape$age, current = sim$rstCurrentBurn)) {
+        if (compareRaster(sim$landscape$age, sim$rstCurrentBurn)) {
         #adjust age of burned pixels - this module assumes annual burns
         sim$landscape$age[sim$rstCurrentBurn == 1] <- 0
         } else {
