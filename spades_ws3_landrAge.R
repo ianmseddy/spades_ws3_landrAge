@@ -106,7 +106,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
       currentHarvestStats <- data.frame('ws3_harvestArea_pixels' = ws3count,
                                         'LandR_harvestArea_pixels' = landrCount,
                                         'year' = time(sim))
-      sim$landscapeStats <- rbind(sim$landscapeStats, currentHarvestStats)
+      sim$harvestStats <- rbind(sim$harvestStats, currentHarvestStats)
       sim$harvestedCohorts <- makeHarvestedCohorts(pixelGroupMap = sim$pixelGroupMap,
                                                    rstCurrentHarvest = sim$rstCurrentHarvest,
                                                    cohortData = sim$cohortData)
