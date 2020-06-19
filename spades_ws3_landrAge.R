@@ -48,7 +48,9 @@ defineModule(sim, list(
     createsOutput(objectName = 'harvestStats', objectClass = 'data.frame',
                   desc = 'data.frame witih simple harvest reporting over landscape'),
     createsOutput(objectName = 'harvestedCohorts', objectClass = 'data.table',
-                  desc = 'contains species, age, and biomass of harvested cohorts')
+                  desc = 'contains species, age, and biomass of harvested cohorts'),
+    createsOutput(objectName = 'harvestPixelHistory', objectClass = 'data.table',
+                  desc = 'table with pixel id and year of harvested pixels')
   )
 ))
 
@@ -106,10 +108,14 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
       currentHarvestStats <- data.frame('ws3_harvestArea_pixels' = ws3count,
                                         'LandR_harvestArea_pixels' = landrCount,
                                         'year' = time(sim))
-      sim$harvestStats <- rbind(sim$harvestStats, currentHarvestStats)
-      sim$harvestedCohorts <- makeHarvestedCohorts(pixelGroupMap = sim$pixelGroupMap,
-                                                   rstCurrentHarvest = sim$rstCurrentHarvest,
-                                                   cohortData = sim$cohortData)
+
+      harvestOutputs<- makeHarvestedCohorts(pixelGroupMap = sim$pixelGroupMap,
+                                            rstCurrentHarvest = sim$rstCurrentHarvest,
+                                            cohortData = sim$cohortData,
+                                            currentTime = time(sim))
+
+      sim$harvestedCohorts <- harvestOutputs$harvestedCohorts
+      sim$harvestPixelHistory <- rbind(sim$harvestPixelHistory, harvestOutputs$harvestPixelHistory)
 
       sim <- scheduleEvent(sim, time(sim) + 1, 'spades_ws3_landrAge', 'outputHarvestRst', eventPriority = 5.5)
     },
@@ -120,36 +126,25 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
   return(invisible(sim))
 }
 
-## event functions
-#   - keep event functions short and clean, modularize by calling subroutines from section below.
-
 ### template initialization
 Init <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
-
   sim$harvestStats <- data.frame('ws3_harvestArea_pixels' = numeric(0), 'LandR_harvestArea_pixels' = numeric(0),
                                  'year' = numeric(0))
-
+  sim$harvestPixelHistory <- data.table( 'pixelIndex' = numeric(0), 'year' = numeric(0))
   return(invisible(sim))
 }
 
 ### template for save events
 Save <- function(sim) {
-  # ! ----- EDIT BELOW ----- ! #
-  # do stuff for this event
   sim <- saveFiles(sim)
-
-  # ! ----- STOP EDITING ----- ! #
   return(invisible(sim))
 }
 
 ### template for plot events
 plotFun <- function(sim) {
-  # ! ----- EDIT BELOW ----- ! #
-  # do stuff for this event
-  Plot(sim$rstCurrentHarvest)
 
-  # ! ----- STOP EDITING ----- ! #
+  Plot(sim$rstCurrentHarvest)
   return(invisible(sim))
 }
 
@@ -173,7 +168,7 @@ buildHarvest <- function(harvestYear, basenames, tifPath, inputPath) {
 }
 
 ### template for your event2
-makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData) {
+makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, currentTime) {
   #this object is necessary in the event harvest occurs on a pixelGroup 0.
   #this is possible if the pixelGroup is at longevity or gets burned.
   #For this reason, we retain the cohort info here.
@@ -184,7 +179,9 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData) {
     .[harvest == 1,]
   #must be cartesian because multiple cohorts, multiple pixels per PG
   harvestedPixels <- cohortData[cdLong, on = c('pixelGroup'), allow.cartesian = TRUE]
-  return(harvestedPixels)
+
+  harvestPixelHistory <- data.frame('pixelIndex' = cdLong$pixelIndex, 'year' = currentTime)
+  return(list('harvestedPixels' = harvestedPixels, 'harvestPixelHistory' = harvestPixelHistory))
 }
 
 .inputObjects <- function(sim) {
