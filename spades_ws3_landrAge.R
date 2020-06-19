@@ -181,7 +181,7 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
   harvestedPixels <- cohortData[cdLong, on = c('pixelGroup'), allow.cartesian = TRUE]
 
   harvestPixelHistory <- data.frame('pixelIndex' = cdLong$pixelIndex, 'year' = rep(currentTime, length = length(cdLong$pixelIndex)))
-  return(list('harvestedPixels' = harvestedPixels, 'harvestPixelHistory' = harvestPixelHistory))
+  return(list('harvestedCohorts' = harvestedPixels, 'harvestPixelHistory' = harvestPixelHistory))
 }
 
 .inputObjects <- function(sim) {
