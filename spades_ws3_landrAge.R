@@ -180,7 +180,7 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
   #must be cartesian because multiple cohorts, multiple pixels per PG
   harvestedPixels <- cohortData[cdLong, on = c('pixelGroup'), allow.cartesian = TRUE]
 
-  harvestPixelHistory <- data.frame('pixelIndex' = cdLong$pixelIndex, 'year' = currentTime)
+  harvestPixelHistory <- data.frame('pixelIndex' = cdLong$pixelIndex, 'year' = rep(currentTime, length = length(cdLong$pixelIndex)))
   return(list('harvestedPixels' = harvestedPixels, 'harvestPixelHistory' = harvestPixelHistory))
 }
 
