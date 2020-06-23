@@ -116,7 +116,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
 
       sim$harvestedCohorts <- harvestOutputs$harvestedCohorts
       sim$harvestPixelHistory <- rbind(sim$harvestPixelHistory, harvestOutputs$harvestPixelHistory)
-      sim$harvestStats <- rbind(sim$harvestStats, harvestStats)
+      sim$harvestStats <- rbind(sim$harvestStats, currentHarvestStats)
 
       sim <- scheduleEvent(sim, time(sim) + 1, 'spades_ws3_landrAge', 'outputHarvestRst', eventPriority = 5.5)
     },
