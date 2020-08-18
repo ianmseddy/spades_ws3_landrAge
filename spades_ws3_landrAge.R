@@ -93,9 +93,9 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
       harvestYear <- P(sim)$base.year + time(sim) - start(sim)
       #e.g. 2015 + 2018 - 2011, if start(sim) != base.year
       rstCurrentHarvest <- buildHarvest(harvestYear,
-                                            basenames = P(sim)$basenames,
-                                            tifPath = P(sim)$tifPath,
-                                            inputPath = inputPath(sim))
+                                        basenames = P(sim)$basenames,
+                                        tifPath = P(sim)$tifPath,
+                                        inputPath = inputPath(sim))
 
       ws3count <- sum(getValues(rstCurrentHarvest) == 1, na.rm = TRUE)
 
@@ -153,11 +153,12 @@ plotFun <- function(sim) {
 buildHarvest <- function(harvestYear, basenames, tifPath, inputPath) {
 
   filePaths <- file.path(inputPath, tifPath, basenames, paste0("projected_harvest_", harvestYear, ".tif"))
-  outputRaster <- lapply(filePaths, raster)
+  outputRaster <- lapply(filePaths, FUN = raster::raster)
 
   if (length(outputRaster) > 1){
+
     names(outputRaster)[1:2] <- c("x", "y") #needed for mosaic
-    outputRaster$FUN <- 'mean'
+    outputRaster$fun <- 'mean'
     outputRaster$na.rm <- TRUE
     outputRaster <- do.call(mosaic, outputRaster)
     outputRaster[is.nan(outputRaster)] <- NA # replace NaN values with NA
@@ -170,6 +171,7 @@ buildHarvest <- function(harvestYear, basenames, tifPath, inputPath) {
 
 ### template for your event2
 makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, currentTime) {
+
   #this object is necessary in the event harvest occurs on a pixelGroup 0.
   #this is possible if the pixelGroup is at longevity or gets burned.
   #For this reason, we retain the cohort info here.
