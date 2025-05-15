@@ -9,7 +9,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = deparse(list("README.txt", "spades_ws3_landrAge.Rmd")),
-  reqdPkgs = list('raster', 'magrittr'),
+  reqdPkgs = list('terra', 'data.table'),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
@@ -32,18 +32,18 @@ defineModule(sim, list(
   ),
   inputObjects = bind_rows(
     #expectsInput("objectName", "objectClass", "input object description", sourceURL, ...),
-    expectsInput(objectName = 'landscape', objectClass = 'RasterStack',
+    expectsInput(objectName = 'landscape', objectClass = 'SpatRaster',
                  desc = 'a raster stack consisting of FMU, THLB, AU, Block ID, and stand age', sourceURL = NA),
-    expectsInput(objectName = 'rstCurrentBurn', objectClass = 'RasterLayer',
+    expectsInput(objectName = 'rstCurrentBurn', objectClass = 'SpatRaster',
                  desc = 'a binary raster representing annual burn'),
-    expectsInput(objectName = 'pixelGroupMap', objectClass = 'RasterLayer',
+    expectsInput(objectName = 'pixelGroupMap', objectClass = 'SpatRaster',
                  desc = 'map of pixelGroups in LandR simulations'),
     expectsInput(objectName = 'cohortData', objectClass = 'data.table',
                  desc = "Columns: B, pixelGroup, speciesCode, Indicating several features about ages and current vegetation of stand")
   ),
   outputObjects = bind_rows(
     #createsOutput("objectName", "objectClass", "output object description", ...),
-    createsOutput(objectName = 'rstCurrentHarvest', objectClass = 'RasterLayer',
+    createsOutput(objectName = 'rstCurrentHarvest', objectClass = 'SpatRaster',
                   desc = 'a raster representing annual harvest areas'),
     createsOutput(objectName = 'harvestStats', objectClass = 'data.frame',
                   desc = 'data.frame witih simple harvest reporting over landscape'),
@@ -177,9 +177,10 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
   #For this reason, we retain the cohort info here.
   cdLong <- data.table(pixelGroup = getValues(pixelGroupMap),
                        pixelIndex = 1:ncell(pixelGroupMap),
-                       harvest = getValues(rstCurrentHarvest)) %>%
-    na.omit(.) %>%
-    .[harvest == 1,]
+                       harvest = getValues(rstCurrentHarvest)) |>
+    na.omit()
+  cdLong <- cdLong[harvest == 1,]
+
   #must be cartesian because multiple cohorts, multiple pixels per PG
   harvestedPixels <- cohortData[cdLong, on = c('pixelGroup'), allow.cartesian = TRUE]
 
@@ -188,25 +189,32 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
 }
 
 .inputObjects <- function(sim) {
-  # Any code written here will be run during the simInit for the purpose of creating
-  # any objects required by this module and identified in the inputObjects element of defineModule.
-  # This is useful if there is something required before simulation to produce the module
-  # object dependencies, including such things as downloading default datasets, e.g.,
-  # downloadData("LCC2005", modulePath(sim)).
-  # Nothing should be created here that does not create a named object in inputObjects.
-  # Any other initiation procedures should be put in "init" eventType of the doEvent function.
-  # Note: the module developer can check if an object is 'suppliedElsewhere' to
-  # selectively skip unnecessary steps because the user has provided those inputObjects in the
-  # simInit call, or another module will supply or has supplied it. e.g.,
-  # if (!suppliedElsewhere('defaultColor', sim)) {
-  #   sim$map <- Cache(prepInputs, extractURL('map')) # download, extract, load file from url in sourceURL
-  # }
 
   #cacheTags <- c(currentModule(sim), "function:.inputObjects") ## uncomment this if Cache is being used
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
   # ! ----- EDIT BELOW ----- ! #
+
+  if (!suppliedElsewhere("landscape", sim)) {
+    sim$landscape <- rast(vals = 10)
+  }
+
+
+  if (!suppliedElsewhere("pixelGroupMap", sim)) {
+    sim$pixelGroupMap <- rast(sim$landscape)
+    sim$pixelGroupMap[] <- 1:ncell(sim$landscape)
+  }
+
+  if (!suppliedElsewhere("cohortData", sim)) {
+    sim$cohortData <- data.table(
+      #lucky numbers
+      "ecoregionGroup" = as.factor("ecofoo_13"),
+      "speciesCode" = "foo6",
+      "pixelGroup" = unique(sim$pixelGroupMap[], na.rm = TRUE),
+      "B" = 7777,
+      "age" = 42)
+  }
 
   # ! ----- STOP EDITING ----- ! #
   return(invisible(sim))
