@@ -9,6 +9,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = deparse(list("README.txt", "spades_ws3_landrAge.Rmd")),
+  loadOrder = list(after = c("spades_ws3_dataInit")),
   reqdPkgs = list('terra', 'data.table'),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description"),
@@ -31,13 +32,14 @@ defineModule(sim, list(
                     "the name of the directory where harvest tifs are stored (currently in inputs)")
   ),
   inputObjects = bind_rows(
-    #expectsInput("objectName", "objectClass", "input object description", sourceURL, ...),
     expectsInput(objectName = 'landscape', objectClass = 'SpatRaster',
                  desc = 'a raster stack consisting of FMU, THLB, AU, Block ID, and stand age', sourceURL = NA),
+    expectsInput(objectName = "rasterToMatch", objectClass = "SpatRaster", desc = "foo"),
     expectsInput(objectName = 'rstCurrentBurn', objectClass = 'SpatRaster',
                  desc = 'a binary raster representing annual burn'),
     expectsInput(objectName = 'pixelGroupMap', objectClass = 'SpatRaster',
                  desc = 'map of pixelGroups in LandR simulations'),
+    expectsInput(objectName = "studyArea", objectClass = "SpatVector", desc = "foo"),
     expectsInput(objectName = 'cohortData', objectClass = 'data.table',
                  desc = "Columns: B, pixelGroup, speciesCode, Indicating several features about ages and current vegetation of stand")
   ),
@@ -153,14 +155,12 @@ plotFun <- function(sim) {
 buildHarvest <- function(harvestYear, basenames, tifPath, inputPath) {
 
   filePaths <- file.path(inputPath, tifPath, basenames, paste0("projected_harvest_", harvestYear, ".tif"))
-  outputRaster <- lapply(filePaths, FUN = raster::raster)
+  outputRaster <- lapply(filePaths, FUN = rast)
 
   if (length(outputRaster) > 1){
 
-    names(outputRaster)[1:2] <- c("x", "y") #needed for mosaic
-    outputRaster$fun <- 'mean'
-    outputRaster$na.rm <- TRUE
-    outputRaster <- do.call(mosaic, outputRaster)
+
+    outputRaster <- rast(outputRaster)
     outputRaster[is.nan(outputRaster)] <- NA # replace NaN values with NA
   } else {
     outputRaster <- outputRaster[[1]]
@@ -196,10 +196,16 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
 
   # ! ----- EDIT BELOW ----- ! #
 
-  if (!suppliedElsewhere("landscape", sim)) {
-    sim$landscape <- rast(vals = 10)
+  if (!suppliedElsewhere("studyArea", sim)) {
+    sim$studyArea <- terra::as.polygons(rast(sim$landscape))
+    sim$studyArea$foo <- 1
+    sim$studyArea <- terra::aggregate(sim$studyArea, "foo")
   }
 
+  if (!suppliedElsewhere("rasterToMatch", sim)) {
+    sim$rasterToMatch <- terra::rast(sim$landscape$fmuid)
+    sim$rasterToMatch[!is.na(sim$rasterToMatch[])] <- 1
+  }
 
   if (!suppliedElsewhere("pixelGroupMap", sim)) {
     sim$pixelGroupMap <- rast(sim$landscape)
