@@ -197,14 +197,19 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
   # ! ----- EDIT BELOW ----- ! #
 
   if (!suppliedElsewhere("studyArea", sim)) {
-    sim$studyArea <- terra::as.polygons(rast(sim$landscape))
-    sim$studyArea$foo <- 1
-    sim$studyArea <- terra::aggregate(sim$studyArea, "foo")
+    studyArea <- sim$landscape[[1]]
+    studyArea <- rast(studyArea)
+    studyArea[!is.na(studyArea)] <- 1
+    studyArea <- as.polygons(studyArea)
+    studyArea$foo <- 1
+    sim$studyArea <- terra::aggregate(studyArea, by = "foo", FUN = "mean", trim = 1)
   }
 
   if (!suppliedElsewhere("rasterToMatch", sim)) {
-    sim$rasterToMatch <- terra::rast(sim$landscape$fmuid)
-    sim$rasterToMatch[!is.na(sim$rasterToMatch[])] <- 1
+    sim$rasterToMatch <- terra::rast(sim$studyArea,
+                                     vals = 1,
+                                     res = res(sim$landscape[[1]]))
+    sim$rasterToMatch <- mask(sim$rasterToMatch, sim$studyArea)
   }
 
   if (!suppliedElsewhere("pixelGroupMap", sim)) {
