@@ -202,9 +202,9 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
   }
 
   if (!suppliedElsewhere("rasterToMatch", sim)) {
-    sim$rasterToMatch <- terra::rast(sim$studyArea,
-                                     vals = 1,
-                                     res = res(sim$landscape[[1]]))
+    sim$rasterToMatch <- terra::rast(sim$landscape[[1]])
+    #get the spatial attributes
+    sim$rasterToMatch[] <- 1
     sim$rasterToMatch <- mask(sim$rasterToMatch, sim$studyArea)
   }
 
