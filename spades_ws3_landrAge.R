@@ -209,7 +209,7 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
   }
 
   if (!suppliedElsewhere("pixelGroupMap", sim)) {
-    sim$pixelGroupMap <- rast(sim$landscape)
+    sim$pixelGroupMap <- rast(sim$landscape[[1]])
     sim$pixelGroupMap[] <- 1:ncell(sim$landscape)
   }
 
