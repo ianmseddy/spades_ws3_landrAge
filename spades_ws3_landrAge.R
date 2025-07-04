@@ -75,11 +75,12 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
     },
 
     adjustBurnedPixels = {
-
       if (!is.null(sim$rstCurrentBurn)){
-        if (compareRaster(sim$landscape$age, sim$rstCurrentBurn)) {
+        if (compareGeom(rast(sim$landscape$age), sim$rstCurrentBurn)) {
         #adjust age of burned pixels - this module assumes annual burns
-        sim$landscape$age[sim$rstCurrentBurn == 1] <- 0
+
+        sim$landscape$age[as.vector(sim$rstCurrentBurn) == 1] <- 0
+        # sim$landscape$age[sim$rstCurrentBurn == 1] <- 0
         } else {
           warning("rstCurrentBurn properties do not align with sim$landscape$age")
         }
@@ -173,7 +174,6 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
   #this object is necessary in the event harvest occurs on a pixelGroup 0.
   #this is possible if the pixelGroup is at longevity or gets burned.
   #For this reason, we retain the cohort info here.
-  browser()
   cdLong <- data.table(pixelGroup = as.vector(pixelGroupMap),
                        pixelIndex = 1:ncell(pixelGroupMap),
                        harvest = as.vector(rstCurrentHarvest)) |>
@@ -221,7 +221,6 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
       "B" = 7777,
       "age" = 42)
   }
-  browser()
 
   # ! ----- STOP EDITING ----- ! #
   return(invisible(sim))
