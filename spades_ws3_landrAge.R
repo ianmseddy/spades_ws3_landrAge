@@ -91,7 +91,6 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
     },
 
     outputHarvestRst = {
-
       harvestYear <- P(sim)$base.year + time(sim) - start(sim)
       #e.g. 2015 + 2018 - 2011, if start(sim) != base.year
       rstCurrentHarvest <- buildHarvest(harvestYear,
@@ -99,14 +98,13 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
                                         tifPath = P(sim)$tifPath,
                                         inputPath = inputPath(sim))
 
-      ws3count <- sum(getValues(rstCurrentHarvest) == 1, na.rm = TRUE)
+      ws3count <- sum(rstCurrentHarvest[] == 1, na.rm = TRUE)
 
       rstCurrentHarvest[is.na(rstCurrentHarvest)] <- 0
       rstCurrentHarvest[is.na(sim$pixelGroupMap)] <- NA
       sim$rstCurrentHarvest <- rstCurrentHarvest
-      landrCount <- sum(getValues(sim$rstCurrentHarvest) == 1, na.rm = TRUE)
+      landrCount <- sum(sim$rstCurrentHarvest[] == 1, na.rm = TRUE)
 
-      sim$rstCurrentHarvest@data@attributes$Year <- time(sim)
       currentHarvestStats <- data.frame('ws3_harvestArea_pixels' = ws3count,
                                         'LandR_harvestArea_pixels' = landrCount,
                                         'year' = time(sim))
@@ -175,9 +173,10 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
   #this object is necessary in the event harvest occurs on a pixelGroup 0.
   #this is possible if the pixelGroup is at longevity or gets burned.
   #For this reason, we retain the cohort info here.
-  cdLong <- data.table(pixelGroup = getValues(pixelGroupMap),
+  browser()
+  cdLong <- data.table(pixelGroup = as.vector(pixelGroupMap),
                        pixelIndex = 1:ncell(pixelGroupMap),
-                       harvest = getValues(rstCurrentHarvest)) |>
+                       harvest = as.vector(rstCurrentHarvest)) |>
     na.omit()
   cdLong <- cdLong[harvest == 1,]
 
@@ -218,10 +217,11 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
       #lucky numbers
       "ecoregionGroup" = as.factor("ecofoo_13"),
       "speciesCode" = "foo6",
-      "pixelGroup" = unique(sim$pixelGroupMap[], na.rm = TRUE),
+      "pixelGroup" = unique(as.vector(sim$pixelGroupMap), na.rm = TRUE),
       "B" = 7777,
       "age" = 42)
   }
+  browser()
 
   # ! ----- STOP EDITING ----- ! #
   return(invisible(sim))
