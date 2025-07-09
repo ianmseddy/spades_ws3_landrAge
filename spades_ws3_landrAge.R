@@ -192,7 +192,16 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
-  # ! ----- EDIT BELOW ----- ! #
+
+  if (!suppliedElsewhere("landscape", sim)) {
+    sim$landscape <- list(fmuid = raster(vals = 41),
+                          thlb = raster(vals = 1),
+                          au = raster(vals = 4101000),
+                          blockid = raster(vals = 4101001),
+                          age = raster(vals = 42)) |>
+      stack()
+  }
+
 
   if (!suppliedElsewhere("studyArea", sim)) {
     studyArea <- sim$landscape[[1]]
@@ -207,18 +216,20 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
   }
 
   if (!suppliedElsewhere("pixelGroupMap", sim)) {
-    sim$pixelGroupMap <- rast(sim$landscape[[1]])
-    sim$pixelGroupMap[] <- 1:ncell(sim$landscape)
+    sim$pixelGroupMap <- rast(sim$landscape$blockid[[1]])
+    names(sim$pixelGroupMap) <- "pixelGroup"
   }
 
   if (!suppliedElsewhere("cohortData", sim)) {
+    ## this isn't correct as ages aren't unique to block id but
+    ## it only matters if Biomass_core is run
+    ## (in which case cohortData should be supplied elsewhere)
     sim$cohortData <- data.table(
-      #lucky numbers
       "ecoregionGroup" = as.factor("ecofoo_13"),
       "speciesCode" = "foo6",
-      "pixelGroup" = unique(as.vector(sim$pixelGroupMap), na.rm = TRUE),
+      "pixelGroup" = na.omit(as.vector(sim$pixelGroupMap)),
       "B" = 7777,
-      "age" = 42)
+      "age" = na.omit(sim$landscape$age[]))
   }
 
   # ! ----- STOP EDITING ----- ! #
