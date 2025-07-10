@@ -156,9 +156,7 @@ buildHarvest <- function(harvestYear, basenames, tifPath, inputPath) {
   outputRaster <- lapply(filePaths, FUN = rast)
 
   if (length(outputRaster) > 1){
-
-
-    outputRaster <- rast(outputRaster)
+    outputRaster <- do.call(terra::mosaic, outputRaster)
     outputRaster[is.nan(outputRaster)] <- NA # replace NaN values with NA
   } else {
     outputRaster <- outputRaster[[1]]
