@@ -28,7 +28,7 @@ defineModule(sim, list(
     defineParameter('basenames', 'character', NA, NA, NA,
                     'vector of MU basenames to load, beginning with tsa, e.g. "tsa40"'),
     defineParameter('base.year', 'numeric', 2015, NA, NA, "base year of forest inventory data"),
-    defineParameter("tifPath", "character", 'tif', NA, NA,
+    defineParameter("tif.path", "character", 'tif', NA, NA,
                     "the name of the directory where harvest tifs are stored (currently in inputs)")
   ),
   inputObjects = bind_rows(
@@ -96,7 +96,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
       #e.g. 2015 + 2018 - 2011, if start(sim) != base.year
       rstCurrentHarvest <- buildHarvest(harvestYear,
                                         basenames = P(sim)$basenames,
-                                        tifPath = P(sim)$tifPath,
+                                        tif.path = P(sim)$tif.path,
                                         inputPath = inputPath(sim))
 
       ws3count <- sum(rstCurrentHarvest[] == 1, na.rm = TRUE)
@@ -150,9 +150,9 @@ plotFun <- function(sim) {
 }
 
 ### template for your event1
-buildHarvest <- function(harvestYear, basenames, tifPath, inputPath) {
+buildHarvest <- function(harvestYear, basenames, tif.path, inputPath) {
 
-  filePaths <- file.path(inputPath, tifPath, basenames, paste0("projected_harvest_", harvestYear, ".tif"))
+  filePaths <- file.path(inputPath, tif.path, basenames, paste0("projected_harvest_", harvestYear, ".tif"))
   outputRaster <- lapply(filePaths, FUN = rast)
 
   if (length(outputRaster) > 1){
