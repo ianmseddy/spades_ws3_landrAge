@@ -192,14 +192,16 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
 
 
   if (!suppliedElsewhere("landscape", sim)) {
-    sim$landscape <- list(fmuid = raster(vals = 41),
-                          thlb = raster(vals = 1),
-                          au = raster(vals = 4101000),
-                          blockid = raster(vals = 4101001),
-                          age = raster(vals = 42)) |>
-      stack()
-  }
+    # create individual SpatRaster layers
+    fmuid    <- rast(nrows=1, ncols=1, vals=41)
+    thlb     <- rast(nrows=1, ncols=1, vals=1)
+    au       <- rast(nrows=1, ncols=1, vals=4101000)
+    blockid  <- rast(nrows=1, ncols=1, vals=4101001)
+    age      <- rast(nrows=1, ncols=1, vals=42)
 
+    # combine layers into a SpatRaster stack
+    sim$landscape <- c(fmuid, thlb, au, blockid, age)
+  }
 
   if (!suppliedElsewhere("studyArea", sim)) {
     studyArea <- sim$landscape[[1]]
