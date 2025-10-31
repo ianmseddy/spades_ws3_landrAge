@@ -31,7 +31,7 @@ defineModule(sim, list(
     defineParameter("tif.path", "character", 'tif', NA, NA,
                     "the name of the directory where harvest tifs are stored (currently in inputs)")
   ),
-  inputObjects = bind_rows(
+  inputObjects = bindrows(
     expectsInput(objectName = 'landscape', objectClass = 'SpatRaster',
                  desc = 'a raster stack consisting of FMU, THLB, AU, Block ID, and stand age', sourceURL = NA),
     expectsInput(objectName = "rasterToMatch", objectClass = "SpatRaster", desc = "foo"),
@@ -43,7 +43,7 @@ defineModule(sim, list(
     expectsInput(objectName = 'cohortData', objectClass = 'data.table',
                  desc = "Columns: B, pixelGroup, speciesCode, Indicating several features about ages and current vegetation of stand")
   ),
-  outputObjects = bind_rows(
+  outputObjects = bindrows(
     #createsOutput("objectName", "objectClass", "output object description", ...),
     createsOutput(objectName = 'rstCurrentHarvest', objectClass = 'SpatRaster',
                   desc = 'a raster representing annual harvest areas'),
