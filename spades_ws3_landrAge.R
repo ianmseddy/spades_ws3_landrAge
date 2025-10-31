@@ -201,22 +201,23 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
 
     # combine layers into a SpatRaster stack
     sim$landscape <- c(fmuid, thlb, au, blockid, age)
+    names(sim$landscape) <- c("fmuid", "thlb", "au", "blockid", "age")
   }
 
   if (!suppliedElsewhere("studyArea", sim)) {
     studyArea <- sim$landscape[[1]]
-    studyArea <- rast(ext(studyArea))
+    sim$studyArea <- vect(ext(studyArea), crs = crs(sim$landscape))
   }
 
   if (!suppliedElsewhere("rasterToMatch", sim)) {
-    sim$rasterToMatch <- terra::rast(sim$landscape[[1]])
+    sim$rasterToMatch <- sim$landscape[[1]]
     #get the spatial attributes
     sim$rasterToMatch[] <- 1
     sim$rasterToMatch <- mask(sim$rasterToMatch, sim$studyArea)
   }
 
   if (!suppliedElsewhere("pixelGroupMap", sim)) {
-    sim$pixelGroupMap <- rast(sim$landscape$blockid[[1]])
+    sim$pixelGroupMap <- sim$landscape$blockid[[1]]
     names(sim$pixelGroupMap) <- "pixelGroup"
   }
 
