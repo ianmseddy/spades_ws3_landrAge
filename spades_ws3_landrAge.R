@@ -4,7 +4,7 @@ defineModule(sim, list(
   keywords = "",
   authors = structure(list(list(given = c("Ian"), family = "Eddy", role = c("aut", "cre"), email = "email@example.com", comment = NULL)), class = "person"),
   childModules = character(0),
-  version = list(SpaDES.core = "1.0.0.9004", spades_ws3_landrAge = "0.0.0.9000"),
+  version = list(spades_ws3_landrAge = "0.0.0.9000"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -33,7 +33,7 @@ defineModule(sim, list(
   ),
   inputObjects = bindrows(
     expectsInput(objectName = 'landscape', objectClass = 'SpatRaster',
-                 desc = 'a raster stack consisting of FMU, THLB, AU, Block ID, and stand age', sourceURL = NA),
+                 desc = 'a SpatRaster consisting of FMU, THLB, AU, Block ID, and stand age', sourceURL = NA),
     expectsInput(objectName = "rasterToMatch", objectClass = "SpatRaster", desc = "foo"),
     expectsInput(objectName = 'rstCurrentBurn', objectClass = 'SpatRaster',
                  desc = 'a binary raster representing annual burn'),
@@ -76,7 +76,8 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
 
     adjustBurnedPixels = {
       if (!is.null(sim$rstCurrentBurn)){
-        if (compareGeom(rast(sim$landscape$age), sim$rstCurrentBurn)) {
+        #if (compareGeom(rast(sim$landscape$age), sim$rstCurrentBurn)) {
+        if (compareGeom(sim$landscape$age, sim$rstCurrentBurn)) {
         #adjust age of burned pixels - this module assumes annual burns
 
         sim$landscape$age[as.vector(sim$rstCurrentBurn) == 1] <- 0
@@ -190,9 +191,8 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
-
   if (!suppliedElsewhere("landscape", sim)) {
-    # create individual SpatRaster layers
+    # create individual SpatRaster layers. This uses TSA41 as a default:
     fmuid    <- rast(nrows=1, ncols=1, vals=41)
     thlb     <- rast(nrows=1, ncols=1, vals=1)
     au       <- rast(nrows=1, ncols=1, vals=4101000)
