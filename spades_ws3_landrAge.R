@@ -150,7 +150,7 @@ plotFun <- function(sim) {
   return(invisible(sim))
 }
 
-### template for your event1
+### buildHarvest function:
 buildHarvest <- function(harvestYear, basenames, tif.path, inputPath) {
 
   filePaths <- file.path(inputPath, tif.path, basenames, paste0("projected_harvest_", harvestYear, ".tif"))
