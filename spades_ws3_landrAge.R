@@ -63,10 +63,6 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
   switch(
     eventType,
     init = {
-      ### check for more detailed object dependencies:
-      ### (use `checkObject` or similar)
-
-      # do stuff for this event
       sim <- Init(sim)
 
       # schedule future event(s)
@@ -76,17 +72,15 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
 
     adjustBurnedPixels = {
       if (!is.null(sim$rstCurrentBurn)){
-        #if (compareGeom(rast(sim$landscape$age), sim$rstCurrentBurn)) {
-        if (compareGeom(sim$landscape$age, sim$rstCurrentBurn)) {
-        #adjust age of burned pixels - this module assumes annual burns
+        if (compareGeom(sim$landscape$age, sim$rstCurrentBurn)) {    # If hte rasters match, run the block
 
+        # Adjust age of burned pixels - if rstCurrentBurn says it burned, then set age to 0
         sim$landscape$age[as.vector(sim$rstCurrentBurn) == 1] <- 0
-        # sim$landscape$age[sim$rstCurrentBurn == 1] <- 0
         } else {
           warning("rstCurrentBurn properties do not align with sim$landscape$age")
         }
       } else {
-        message(paste0('no rstCurrentBurn detected in year '), time(sim))
+        message(paste0('no rstCurrentBurn present for year '), time(sim))
       }
       sim <- scheduleEvent(sim, time(sim) + 1, "spades_ws3_landrAge", "adjustBurnedPixels")
 
@@ -107,6 +101,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
       sim$rstCurrentHarvest <- rstCurrentHarvest
       landrCount <- sum(sim$rstCurrentHarvest[] == 1, na.rm = TRUE)
 
+      #TODO: Make this a data.table
       currentHarvestStats <- data.frame('ws3_harvestArea_pixels' = ws3count,
                                         'LandR_harvestArea_pixels' = landrCount,
                                         'year' = time(sim))
@@ -129,28 +124,31 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
   return(invisible(sim))
 }
 
-### template initialization
+
 Init <- function(sim) {
-  # # ! ----- EDIT BELOW ----- ! #
+
   sim$harvestStats <- data.frame('ws3_harvestArea_pixels' = numeric(0), 'LandR_harvestArea_pixels' = numeric(0),
                                  'year' = numeric(0))
   sim$harvestPixelHistory <- data.table( 'pixelIndex' = numeric(0), 'year' = numeric(0))
   return(invisible(sim))
 }
 
-### template for save events
+
 Save <- function(sim) {
 
   return(invisible(sim))
 }
 
-### template for plot events
 plotFun <- function(sim) {
 
   return(invisible(sim))
 }
 
-### buildHarvest function:
+########
+## Functions:
+
+# Name: buildHarvest
+# What this function does:
 buildHarvest <- function(harvestYear, basenames, tif.path, inputPath) {
 
   filePaths <- file.path(inputPath, tif.path, basenames, paste0("projected_harvest_", harvestYear, ".tif"))
@@ -166,7 +164,8 @@ buildHarvest <- function(harvestYear, basenames, tif.path, inputPath) {
   return(outputRaster)
 }
 
-### template for your event2
+# Name: makeHarvestedCohorts
+# What this function does:
 makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, currentTime) {
 
   #this object is necessary in the event harvest occurs on a pixelGroup 0.
