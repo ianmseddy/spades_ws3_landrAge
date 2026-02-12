@@ -4,7 +4,7 @@ defineModule(sim, list(
   keywords = "",
   authors = structure(list(list(given = c("Ian"), family = "Eddy", role = c("aut", "cre"), email = "email@example.com", comment = NULL)), class = "person"),
   childModules = character(0),
-  version = list(SpaDES.core = "1.0.0.9004", spades_ws3_landrAge = "0.0.0.9000"),
+  version = list(spades_ws3_landrAge = "0.0.0.9000"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -31,9 +31,9 @@ defineModule(sim, list(
     defineParameter("tif.path", "character", 'tif', NA, NA,
                     "the name of the directory where harvest tifs are stored (currently in inputs)")
   ),
-  inputObjects = bind_rows(
+  inputObjects = bindrows(
     expectsInput(objectName = 'landscape', objectClass = 'SpatRaster',
-                 desc = 'a raster stack consisting of FMU, THLB, AU, Block ID, and stand age', sourceURL = NA),
+                 desc = 'a SpatRaster consisting of FMU, THLB, AU, Block ID, and stand age', sourceURL = NA),
     expectsInput(objectName = "rasterToMatch", objectClass = "SpatRaster", desc = "foo"),
     expectsInput(objectName = 'rstCurrentBurn', objectClass = 'SpatRaster',
                  desc = 'a binary raster representing annual burn'),
@@ -43,7 +43,7 @@ defineModule(sim, list(
     expectsInput(objectName = 'cohortData', objectClass = 'data.table',
                  desc = "Columns: B, pixelGroup, speciesCode, Indicating several features about ages and current vegetation of stand")
   ),
-  outputObjects = bind_rows(
+  outputObjects = bindrows(
     #createsOutput("objectName", "objectClass", "output object description", ...),
     createsOutput(objectName = 'rstCurrentHarvest', objectClass = 'SpatRaster',
                   desc = 'a raster representing annual harvest areas'),
@@ -63,10 +63,6 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
   switch(
     eventType,
     init = {
-      ### check for more detailed object dependencies:
-      ### (use `checkObject` or similar)
-
-      # do stuff for this event
       sim <- Init(sim)
 
       # schedule future event(s)
@@ -76,16 +72,15 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
 
     adjustBurnedPixels = {
       if (!is.null(sim$rstCurrentBurn)){
-        if (compareGeom(rast(sim$landscape$age), sim$rstCurrentBurn)) {
-        #adjust age of burned pixels - this module assumes annual burns
+        if (compareGeom(sim$landscape$age, sim$rstCurrentBurn)) {    # If hte rasters match, run the block
 
+        # Adjust age of burned pixels - if rstCurrentBurn says it burned, then set age to 0
         sim$landscape$age[as.vector(sim$rstCurrentBurn) == 1] <- 0
-        # sim$landscape$age[sim$rstCurrentBurn == 1] <- 0
         } else {
           warning("rstCurrentBurn properties do not align with sim$landscape$age")
         }
       } else {
-        message(paste0('no rstCurrentBurn detected in year '), time(sim))
+        message(paste0('no rstCurrentBurn present for year '), time(sim))
       }
       sim <- scheduleEvent(sim, time(sim) + 1, "spades_ws3_landrAge", "adjustBurnedPixels")
 
@@ -106,6 +101,7 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
       sim$rstCurrentHarvest <- rstCurrentHarvest
       landrCount <- sum(sim$rstCurrentHarvest[] == 1, na.rm = TRUE)
 
+      #TODO: Make this a data.table
       currentHarvestStats <- data.frame('ws3_harvestArea_pixels' = ws3count,
                                         'LandR_harvestArea_pixels' = landrCount,
                                         'year' = time(sim))
@@ -128,28 +124,31 @@ doEvent.spades_ws3_landrAge = function(sim, eventTime, eventType) {
   return(invisible(sim))
 }
 
-### template initialization
+
 Init <- function(sim) {
-  # # ! ----- EDIT BELOW ----- ! #
+
   sim$harvestStats <- data.frame('ws3_harvestArea_pixels' = numeric(0), 'LandR_harvestArea_pixels' = numeric(0),
                                  'year' = numeric(0))
   sim$harvestPixelHistory <- data.table( 'pixelIndex' = numeric(0), 'year' = numeric(0))
   return(invisible(sim))
 }
 
-### template for save events
+
 Save <- function(sim) {
 
   return(invisible(sim))
 }
 
-### template for plot events
 plotFun <- function(sim) {
 
   return(invisible(sim))
 }
 
-### template for your event1
+########
+## Functions:
+
+# Name: buildHarvest
+# What this function does:
 buildHarvest <- function(harvestYear, basenames, tif.path, inputPath) {
 
   filePaths <- file.path(inputPath, tif.path, basenames, paste0("projected_harvest_", harvestYear, ".tif"))
@@ -165,7 +164,8 @@ buildHarvest <- function(harvestYear, basenames, tif.path, inputPath) {
   return(outputRaster)
 }
 
-### template for your event2
+# Name: makeHarvestedCohorts
+# What this function does:
 makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, currentTime) {
 
   #this object is necessary in the event harvest occurs on a pixelGroup 0.
@@ -190,31 +190,33 @@ makeHarvestedCohorts <- function(pixelGroupMap, rstCurrentHarvest, cohortData, c
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
-
   if (!suppliedElsewhere("landscape", sim)) {
-    sim$landscape <- list(fmuid = raster(vals = 41),
-                          thlb = raster(vals = 1),
-                          au = raster(vals = 4101000),
-                          blockid = raster(vals = 4101001),
-                          age = raster(vals = 42)) |>
-      stack()
-  }
+    # create individual SpatRaster layers. This uses TSA41 as a default:
+    fmuid    <- rast(nrows=1, ncols=1, vals=41)
+    thlb     <- rast(nrows=1, ncols=1, vals=1)
+    au       <- rast(nrows=1, ncols=1, vals=4101000)
+    blockid  <- rast(nrows=1, ncols=1, vals=4101001)
+    age      <- rast(nrows=1, ncols=1, vals=42)
 
+    # combine layers into a SpatRaster stack
+    sim$landscape <- c(fmuid, thlb, au, blockid, age)
+    names(sim$landscape) <- c("fmuid", "thlb", "au", "blockid", "age")
+  }
 
   if (!suppliedElsewhere("studyArea", sim)) {
     studyArea <- sim$landscape[[1]]
-    studyArea <- rast(ext(studyArea))
+    sim$studyArea <- vect(ext(studyArea), crs = crs(sim$landscape))
   }
 
   if (!suppliedElsewhere("rasterToMatch", sim)) {
-    sim$rasterToMatch <- terra::rast(sim$landscape[[1]])
+    sim$rasterToMatch <- sim$landscape[[1]]
     #get the spatial attributes
     sim$rasterToMatch[] <- 1
     sim$rasterToMatch <- mask(sim$rasterToMatch, sim$studyArea)
   }
 
   if (!suppliedElsewhere("pixelGroupMap", sim)) {
-    sim$pixelGroupMap <- rast(sim$landscape$blockid[[1]])
+    sim$pixelGroupMap <- sim$landscape$blockid[[1]]
     names(sim$pixelGroupMap) <- "pixelGroup"
   }
 
